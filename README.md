@@ -4,7 +4,7 @@ This repositotry contains a reference implementation for "A memory Representatio
 
 ## How to use this repo
 
-This repository contains several Rust libraries:
+This repository contains several Rust libraries and directories:
 
 * The Random Forest classification/regression reference implementation is in `embedded-rforest/`.
 * `forest-optimizer` is used to transform raw RF text files into an optimized RF memory representation
