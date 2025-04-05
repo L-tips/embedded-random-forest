@@ -26,7 +26,7 @@ pub trait Predict {
     type ProblemType: ProblemType;
 
     /// Make a prediction based on input values (features)
-    fn predict(&self, features: &[f32]) -> <Self::ProblemType as ProblemType>::Output;
+    unsafe fn predict(&self, features: &[f32]) -> <Self::ProblemType as ProblemType>::Output;
 }
 
 pub struct Classification {
@@ -177,11 +177,17 @@ impl<P: ProblemType> OptimizedForest<'_, P> {
     }
 
     fn next_left(&self, branch: &Branch) -> &Branch {
-        unsafe { self.nodes.get_unchecked(branch.left_ptr().as_ptr() as usize) }
+        unsafe {
+            self.nodes
+                .get_unchecked(branch.left_ptr().as_ptr() as usize)
+        }
     }
 
     fn next_right(&self, branch: &Branch) -> &Branch {
-        unsafe { self.nodes.get_unchecked(branch.right_ptr().as_ptr() as usize) }
+        unsafe {
+            self.nodes
+                .get_unchecked(branch.right_ptr().as_ptr() as usize)
+        }
     }
 }
 
@@ -212,35 +218,36 @@ impl Predict for OptimizedForest<'_, Classification> {
 
     #[must_use]
     #[inline(never)]
-    fn predict(&self, features: &[f32]) -> <Self::ProblemType as ProblemType>::Output {
+    unsafe fn predict(&self, features: &[f32]) -> <Self::ProblemType as ProblemType>::Output {
         let mut votes = LinearMap::<_, _, 255>::new();
-        unsafe {
-            for tree_id in 0..self.num_trees.get() {
-                let mut node = self.nodes.get_unchecked(tree_id as usize);
 
-                let prediction = loop {
-                    let test = *features.get_unchecked(node.split_with() as usize) <= node.split_at();
+        for tree_id in 0..self.num_trees.get() {
+            let mut node = unsafe { self.nodes.get_unchecked(tree_id as usize) };
 
-                    if test {
-                        if node.flags.left_prediction() {
-                            break node.left_ptr().as_ptr();
-                        } else {
-                            node = self.next_left(node);
-                        }
-                    } else if node.flags.right_prediction() {
-                        break node.right_ptr().as_ptr();
-                    } else {
-                        node = self.next_right(node);
-                    }
+            let prediction = loop {
+                let test = unsafe {
+                    *features.get_unchecked(node.split_with() as usize) <= node.split_at()
                 };
 
-                // Register the vote for this tree's prediction
-                let vote = votes.get_mut(&prediction);
-                if let Some(v) = vote {
-                    *v += 1;
+                if test {
+                    if node.flags.left_prediction() {
+                        break node.left_ptr().as_ptr();
+                    } else {
+                        node = self.next_left(node);
+                    }
+                } else if node.flags.right_prediction() {
+                    break node.right_ptr().as_ptr();
                 } else {
-                    votes.insert(prediction, 0).unwrap();
+                    node = self.next_right(node);
                 }
+            };
+
+            // Register the vote for this tree's prediction
+            let vote = votes.get_mut(&prediction);
+            if let Some(v) = vote {
+                *v += 1;
+            } else {
+                votes.insert(prediction, 0).unwrap();
             }
         }
 
@@ -271,7 +278,7 @@ impl Predict for OptimizedForest<'_, Regression> {
 
     #[must_use]
     #[inline(never)]
-    fn predict(&self, features: &[f32]) -> f32 {
+    unsafe fn predict(&self, features: &[f32]) -> f32 {
         let mut result = 0.0;
 
         for tree_id in 0..self.num_trees.get() {
