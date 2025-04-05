@@ -1,0 +1,15 @@
+[package]
+name = "embedded-rforest"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aligned-vec = { version = "0.6.1", optional = true }
+heapless = "0.8.0"
+zerocopy = { version = "0.8.7", features = ["derive"] }
+
+[dev-dependencies]
+anyhow = "1.0.91"
+
+[features]
+std = ["dep:aligned-vec"]
