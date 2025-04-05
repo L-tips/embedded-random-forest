@@ -41,7 +41,7 @@ impl Classification {
 }
 
 impl ProblemType for Classification {
-    type Output = u32;
+    type Output = u16;
     const HAS_TARGETS: bool = true;
 }
 
@@ -54,28 +54,28 @@ impl ProblemType for Regression {
 
 #[repr(transparent)]
 #[derive(IntoBytes, Clone, KnownLayout, Immutable, FromBytes)]
-pub struct Flags(U32);
+pub struct Flags(u8);
 
 impl Flags {
-    fn new(split_var_idx: u32, left_is_prediction: bool, right_is_prediction: bool) -> Self {
-        assert!(split_var_idx <= u32::MAX >> 2);
+    fn new(split_var_idx: u8, left_is_prediction: bool, right_is_prediction: bool) -> Self {
+        assert!(split_var_idx <= u8::MAX >> 2);
 
         let val = split_var_idx
-            | ((left_is_prediction as u32) << (32 - 1))
-            | ((right_is_prediction as u32) << (32 - 2));
-        Self(U32::new(val))
+            | ((left_is_prediction as u8) << (8 - 1))
+            | ((right_is_prediction as u8) << (8 - 2));
+        Self(val)
     }
 
     fn left_prediction(&self) -> bool {
-        (self.0 >> (32 - 1)) & 1 != 0
+        (self.0 >> (8 - 1)) & 1 != 0
     }
 
     fn right_prediction(&self) -> bool {
-        (self.0 >> (32 - 2)) & 1 != 0
+        (self.0 >> (8 - 2)) & 1 != 0
     }
 
-    fn split_var_idx(&self) -> u32 {
-        (self.0 & (u32::MAX >> 2)).get()
+    fn split_var_idx(&self) -> u8 {
+        self.0 & (u8::MAX >> 2)
     }
 }
 
@@ -92,18 +92,20 @@ impl Debug for Flags {
 }
 
 #[derive(Debug, Clone, IntoBytes, KnownLayout, Immutable, FromBytes)]
+#[cfg_attr(feature = "std", derive(type_layout::TypeLayout))]
 #[repr(C, align(4))]
 pub struct Branch {
+    split_at: F32,
     left: NodePointer,
     right: NodePointer,
-    split_at: F32,
     flags: Flags,
+    _padding: [u8; 3],
 }
 
 impl Branch {
     #[inline]
     pub fn new(
-        split_with: u32,
+        split_with: u8,
         split_at: f32,
         left: NodePointer,
         right: NodePointer,
@@ -116,11 +118,12 @@ impl Branch {
             split_at: F32::new(split_at),
             left,
             right,
+            _padding: [0; 3],
         }
     }
 
     #[inline]
-    pub fn split_with(&self) -> u32 {
+    pub fn split_with(&self) -> u8 {
         self.flags.split_var_idx()
     }
 
@@ -265,40 +268,40 @@ impl<'data> OptimizedForest<'data, Regression> {
     }
 }
 
-impl Predict for OptimizedForest<'_, Regression> {
-    type ProblemType = Regression;
+// impl Predict for OptimizedForest<'_, Regression> {
+//     type ProblemType = Regression;
 
-    #[must_use]
-    #[inline(never)]
-    fn predict(&self, features: &[f32]) -> f32 {
-        let mut result = 0.0;
+//     #[must_use]
+//     #[inline(never)]
+//     fn predict(&self, features: &[f32]) -> f32 {
+//         let mut result = 0.0;
 
-        for tree_id in 0..self.num_trees.get() {
-            let mut node = &self.nodes[tree_id as usize];
+//         for tree_id in 0..self.num_trees.get() {
+//             let mut node = &self.nodes[tree_id as usize];
 
-            let prediction = loop {
-                let test = features[node.split_with() as usize] <= node.split_at();
+//             let prediction = loop {
+//                 let test = features[node.split_with() as usize] <= node.split_at();
 
-                if test {
-                    if node.flags.left_prediction() {
-                        break node.left_ptr().as_f32();
-                    } else {
-                        node = self.next_left(node);
-                    }
-                } else if node.flags.right_prediction() {
-                    break node.right_ptr().as_f32();
-                } else {
-                    node = self.next_right(node);
-                }
-            };
+//                 if test {
+//                     if node.flags.left_prediction() {
+//                         break node.left_ptr().as_f32();
+//                     } else {
+//                         node = self.next_left(node);
+//                     }
+//                 } else if node.flags.right_prediction() {
+//                     break node.right_ptr().as_f32();
+//                 } else {
+//                     node = self.next_right(node);
+//                 }
+//             };
 
-            // Register the vote for this tree's prediction
-            result += prediction;
-        }
+//             // Register the vote for this tree's prediction
+//             result += prediction;
+//         }
 
-        result / self.num_trees.get() as f32
-    }
-}
+//         result / self.num_trees.get() as f32
+//     }
+// }
 
 impl<P: ProblemType> fmt::Display for OptimizedForest<'_, P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

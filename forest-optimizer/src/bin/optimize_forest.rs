@@ -1,6 +1,6 @@
 use clap::{Parser, ValueEnum};
 use color_eyre::Result;
-use forest_optimizer::write_forest::{write_classification, write_regression};
+use forest_optimizer::write_forest::write_classification;
 
 use std::path::PathBuf;
 
@@ -33,6 +33,7 @@ fn main() -> Result<()> {
 
     match args.problem_type {
         ProblemType::Classification => write_classification(args.input, args.output),
-        ProblemType::Regression => write_regression(args.input, args.output),
+        _ => unimplemented!(),
+        // ProblemType::Regression => write_regression(args.input, args.output),
     }
 }

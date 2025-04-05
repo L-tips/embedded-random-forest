@@ -493,47 +493,47 @@ impl UpdatePointers for Classification {
         };
 
         Some(embedded_rforest::forest::Branch::new(
-            branch.split_with,
+            branch.split_with.try_into().unwrap(),
             branch.split_at,
-            NodePointer::new_ptr(left_val),
-            NodePointer::new_ptr(right_val),
+            NodePointer::new_ptr(left_val.try_into().unwrap()),
+            NodePointer::new_ptr(right_val.try_into().unwrap()),
             left_pred,
             right_pred,
         ))
     }
 }
 
-impl UpdatePointers for Regression {
-    fn update_pointers(
-        nodes: &[RefCell<Option<TransitionBranch<Self>>>],
-        branch: &RefCell<Option<TransitionBranch<Self>>>,
-    ) -> Option<embedded_rforest::forest::Branch> {
-        let branch = branch.borrow();
-        let branch = branch.as_ref()?;
+// impl UpdatePointers for Regression {
+//     fn update_pointers(
+//         nodes: &[RefCell<Option<TransitionBranch<Self>>>],
+//         branch: &RefCell<Option<TransitionBranch<Self>>>,
+//     ) -> Option<embedded_rforest::forest::Branch> {
+//         let branch = branch.borrow();
+//         let branch = branch.as_ref()?;
 
-        let (left_pred, left_ptr) = match branch.left {
-            TransitionNode::Leaf(l) => (true, NodePointer::new_f32(l)),
-            TransitionNode::Branch(b) => {
-                let next = nodes[b as usize].borrow().as_ref()?.id;
-                (false, NodePointer::new_ptr(next))
-            }
-        };
+//         let (left_pred, left_ptr) = match branch.left {
+//             TransitionNode::Leaf(l) => (true, NodePointer::new_f32(l)),
+//             TransitionNode::Branch(b) => {
+//                 let next = nodes[b as usize].borrow().as_ref()?.id;
+//                 (false, NodePointer::new_ptr(next))
+//             }
+//         };
 
-        let (right_pred, right_ptr) = match branch.right {
-            TransitionNode::Leaf(l) => (true, NodePointer::new_f32(l)),
-            TransitionNode::Branch(b) => {
-                let next = nodes[b as usize].borrow().as_ref()?.id;
-                (false, NodePointer::new_ptr(next))
-            }
-        };
+//         let (right_pred, right_ptr) = match branch.right {
+//             TransitionNode::Leaf(l) => (true, NodePointer::new_f32(l)),
+//             TransitionNode::Branch(b) => {
+//                 let next = nodes[b as usize].borrow().as_ref()?.id;
+//                 (false, NodePointer::new_ptr(next))
+//             }
+//         };
 
-        Some(embedded_rforest::forest::Branch::new(
-            branch.split_with,
-            branch.split_at,
-            left_ptr,
-            right_ptr,
-            left_pred,
-            right_pred,
-        ))
-    }
-}
+//         Some(embedded_rforest::forest::Branch::new(
+//             branch.split_with,
+//             branch.split_at,
+//             left_ptr,
+//             right_ptr,
+//             left_pred,
+//             right_pred,
+//         ))
+//     }
+// }
