@@ -177,11 +177,11 @@ impl<P: ProblemType> OptimizedForest<'_, P> {
     }
 
     fn next_left(&self, branch: &Branch) -> &Branch {
-        &self.nodes[branch.left_ptr().as_ptr() as usize]
+        unsafe { self.nodes.get_unchecked(branch.left_ptr().as_ptr() as usize) }
     }
 
     fn next_right(&self, branch: &Branch) -> &Branch {
-        &self.nodes[branch.right_ptr().as_ptr() as usize]
+        unsafe { self.nodes.get_unchecked(branch.right_ptr().as_ptr() as usize) }
     }
 }
 
@@ -214,32 +214,33 @@ impl Predict for OptimizedForest<'_, Classification> {
     #[inline(never)]
     fn predict(&self, features: &[f32]) -> <Self::ProblemType as ProblemType>::Output {
         let mut votes = LinearMap::<_, _, 255>::new();
+        unsafe {
+            for tree_id in 0..self.num_trees.get() {
+                let mut node = self.nodes.get_unchecked(tree_id as usize);
 
-        for tree_id in 0..self.num_trees.get() {
-            let mut node = &self.nodes[tree_id as usize];
+                let prediction = loop {
+                    let test = *features.get_unchecked(node.split_with() as usize) <= node.split_at();
 
-            let prediction = loop {
-                let test = features[node.split_with() as usize] <= node.split_at();
-
-                if test {
-                    if node.flags.left_prediction() {
-                        break node.left_ptr().as_ptr();
+                    if test {
+                        if node.flags.left_prediction() {
+                            break node.left_ptr().as_ptr();
+                        } else {
+                            node = self.next_left(node);
+                        }
+                    } else if node.flags.right_prediction() {
+                        break node.right_ptr().as_ptr();
                     } else {
-                        node = self.next_left(node);
+                        node = self.next_right(node);
                     }
-                } else if node.flags.right_prediction() {
-                    break node.right_ptr().as_ptr();
-                } else {
-                    node = self.next_right(node);
-                }
-            };
+                };
 
-            // Register the vote for this tree's prediction
-            let vote = votes.get_mut(&prediction);
-            if let Some(v) = vote {
-                *v += 1;
-            } else {
-                votes.insert(prediction, 0).unwrap();
+                // Register the vote for this tree's prediction
+                let vote = votes.get_mut(&prediction);
+                if let Some(v) = vote {
+                    *v += 1;
+                } else {
+                    votes.insert(prediction, 0).unwrap();
+                }
             }
         }
 
