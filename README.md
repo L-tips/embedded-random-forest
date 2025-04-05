@@ -6,7 +6,7 @@ This repositotry contains a reference implementation for "A memory Representatio
 
 This repository contains several Rust libraries and directories:
 
-* The Random Forest classification/regression reference implementation is in `embedded-rforest/`.
+* The Random Forest classification/regression reference implementation is in `embedded-rforest/`. It may be used as a `#[no_std]` library.
 * `forest-optimizer` is used to transform raw RF text files into an optimized RF memory representation
 * `bench-data` contains the pre-trained Random Forests used in the benchmarks, both in raw text format (`*.csv`) and optimized, binary format (`*.rforest`).
 * `datasets` contains the datasets used to train the random forests. Note that the `iris` dataset is available by default with an `R` distribution. The `skydive` dataset is separated by individual skydiving jump.
@@ -16,7 +16,7 @@ This repository contains several Rust libraries and directories:
 Run
 
 ```sh
-cargo run --bin optimize_forest --input [input_file] --output [output_file] --problem-type {classification|regression}
+cargo run --bin optimize_forest -- --input [input_file] --output [output_file] --problem-type {classification|regression}
 ```
 
 ## Different optimizations for different needs
