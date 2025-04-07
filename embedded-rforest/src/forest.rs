@@ -6,11 +6,11 @@ use core::{
 
 use heapless::LinearMap;
 use zerocopy::{
-    byteorder::little_endian::{F32, U32},
     FromBytes, Immutable, IntoBytes, KnownLayout, TryFromBytes,
+    byteorder::little_endian::{F32, U32},
 };
 
-use crate::{ptr::NodePointer, Error};
+use crate::{Error, ptr::NodePointer};
 
 pub mod deserialize;
 
