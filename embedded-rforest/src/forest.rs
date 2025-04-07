@@ -61,8 +61,8 @@ impl Flags {
         assert!(split_var_idx <= u32::MAX >> 2);
 
         let val = split_var_idx
-            | (left_is_prediction as u32) << (32 - 1)
-            | (right_is_prediction as u32) << (32 - 2);
+            | ((left_is_prediction as u32) << (32 - 1))
+            | ((right_is_prediction as u32) << (32 - 2));
         Self(U32::new(val))
     }
 
@@ -75,7 +75,7 @@ impl Flags {
     }
 
     fn split_var_idx(&self) -> u32 {
-        (self.0 & u32::MAX >> 2).get()
+        (self.0 & (u32::MAX >> 2)).get()
     }
 }
 
