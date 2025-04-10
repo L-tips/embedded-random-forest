@@ -8,10 +8,10 @@ use super::{Branch, OptimizedForest, ProblemType};
 
 #[macro_export]
 macro_rules! static_storage {
-    ($file:literal $(, link_section = $section:literal)?) => {{
+    ($file:literal $(, unsafe(link_section = $section:literal))?) => {{
         const BYTES_LEN: usize = include_bytes!($file).len();
 
-        $(#[link_section = $section])?
+        $(#[unsafe(link_section = $section)])?
         static BUF: ::embedded_rforest::forest::deserialize::BackingStorage<BYTES_LEN> =
             ::embedded_rforest::forest::deserialize::BackingStorage::new(*include_bytes!($file));
         BUF.to_slice()

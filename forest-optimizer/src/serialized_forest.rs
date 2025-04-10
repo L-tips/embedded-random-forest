@@ -1,4 +1,4 @@
-use crate::forest::{Branch, Leaf, Node};
+use crate::forest::{BranchNode, LeafNode, Node};
 use crate::problem_type::{Classification, Map, PredictionType, ProblemType, Regression};
 use crate::typelevel::private::Sealed;
 use std::collections::hash_map::Entry;
@@ -7,8 +7,8 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::{fs, io};
 
-use color_eyre::eyre::{eyre, Context, ContextCompat, OptionExt};
 use color_eyre::Result;
+use color_eyre::eyre::{Context, ContextCompat, OptionExt, eyre};
 use serde::{Deserialize, Deserializer};
 
 pub trait NodeType {}
@@ -115,7 +115,7 @@ impl SerializedNode for SerializedClassificationNode {
 
     fn normalize(self, problem: &Self::ProblemType) -> Result<Node<Self::ProblemType>> {
         if self.split_on.is_some() {
-            let branch = Branch {
+            let branch = BranchNode {
                 split_with: self
                     .feature_id(problem.features())
                     .ok_or_eyre("Feature ID missing")?,
@@ -126,7 +126,7 @@ impl SerializedNode for SerializedClassificationNode {
 
             return Ok(Node::Branch(branch));
         } else if self.prediction.is_some() {
-            let leaf = Leaf {
+            let leaf = LeafNode {
                 prediction: self
                     .target_id(problem.targets())
                     .ok_or_eyre("Target ID missing")?,
@@ -218,7 +218,7 @@ impl SerializedNode for SerializedRegressionNode {
 
     fn normalize(self, problem: &Self::ProblemType) -> Result<Node<Self::ProblemType>> {
         if self.split_on.is_some() {
-            let branch = Branch {
+            let branch = BranchNode {
                 split_with: self
                     .feature_id(problem.features())
                     .ok_or_eyre("Feature ID missing")?,
@@ -229,7 +229,7 @@ impl SerializedNode for SerializedRegressionNode {
 
             return Ok(Node::Branch(branch));
         } else if self.prediction.is_some() {
-            let leaf = Leaf {
+            let leaf = LeafNode {
                 prediction: self.prediction.ok_or_eyre("Prediction missing")?,
             };
 
@@ -296,8 +296,7 @@ impl<N: SerializedNode> SerializedForest<N> {
             .context("Malformed forest definition file. First line doesn't start with '#'.")?;
 
         let prediction_type = &serde_json::from_str::<serde_json::Value>(header)
-            .context("Malformed forest definition file. First line doesn't contain valid json")?
-            ["problem_type"];
+            .context("Malformed forest definition file. First line doesn't contain valid json")?["problem_type"];
 
         let prediction_type: PredictionType = serde_json::from_value(prediction_type.clone())?;
         if prediction_type != N::ProblemType::TYPE {

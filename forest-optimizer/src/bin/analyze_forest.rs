@@ -2,8 +2,8 @@ use std::mem::size_of_val;
 use std::path::{Path, PathBuf};
 
 use clap::{Parser, ValueEnum};
-use color_eyre::eyre::{eyre, Context};
 use color_eyre::Result;
+use color_eyre::eyre::{Context, eyre};
 
 use embedded_rforest::forest::{Classification, OptimizedForest, Regression};
 use forest_optimizer::forest::{Forest, Node};
@@ -60,8 +60,13 @@ fn analyze_classification(input: impl AsRef<Path>) -> Result<()> {
     let forest_len = forest.nodes().len();
     println!(
         "--- Unoptimized forest ---\nTotal length: {} | Branches: {} , leaves: {} | Size: {} bytes\n--------------------------\n\n",
-        forest_len, branch_cnt, leaf_cnt, size_of_val(forest.nodes())
+        forest_len,
+        branch_cnt,
+        leaf_cnt,
+        size_of_val(forest.nodes())
     );
+
+    println!("Forest: {:?}", forest);
 
     let optimized_nodes = forest.optimize_nodes();
     let optimized = OptimizedForest::<Classification>::new(
@@ -78,7 +83,13 @@ fn analyze_classification(input: impl AsRef<Path>) -> Result<()> {
     let ptr = serialized.as_ptr();
     assert!(ptr as usize % align_of::<OptimizedForest<Classification>>() == 0);
 
-    println!("--- Optimized forest ---\nTotal length: {} | Branches: {} , leaves: {} | Size: {}\n--------------------------\n\n", optimized_len, optimized_len, 0, serialized.len());
+    println!(
+        "--- Optimized forest ---\nTotal length: {} | Branches: {} , leaves: {} | Size: {}\n--------------------------\n\n",
+        optimized_len,
+        optimized_len,
+        0,
+        serialized.len()
+    );
 
     let pruned = (forest_len as f32 - optimized_len as f32) / (forest_len as f32);
     println!(
@@ -112,8 +123,13 @@ fn analyze_regression(input: impl AsRef<Path>) -> Result<()> {
     let forest_len = forest.nodes().len();
     println!(
         "--- Unoptimized forest ---\nTotal length: {} | Branches: {} , leaves: {} | Size: {} bytes\n--------------------------\n\n",
-        forest_len, branch_cnt, leaf_cnt, size_of_val(forest.nodes())
+        forest_len,
+        branch_cnt,
+        leaf_cnt,
+        size_of_val(forest.nodes())
     );
+
+    println!("Forest: {:?}", forest);
 
     let optimized_nodes = forest.optimize_nodes();
     let optimized = OptimizedForest::<Regression>::new(
@@ -129,7 +145,13 @@ fn analyze_regression(input: impl AsRef<Path>) -> Result<()> {
     let ptr = serialized.as_ptr();
     assert!(ptr as usize % align_of::<OptimizedForest<Regression>>() == 0);
 
-    println!("--- Optimized forest ---\nTotal length: {} | Branches: {} , leaves: {} | Size: {}\n--------------------------\n\n", optimized_len, optimized_len, 0, serialized.len());
+    println!(
+        "--- Optimized forest ---\nTotal length: {} | Branches: {} , leaves: {} | Size: {}\n--------------------------\n\n",
+        optimized_len,
+        optimized_len,
+        0,
+        serialized.len()
+    );
 
     let pruned = (forest_len as f32 - optimized_len as f32) / (forest_len as f32);
     println!(

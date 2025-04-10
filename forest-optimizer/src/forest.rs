@@ -11,14 +11,14 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct Branch {
+pub struct BranchNode {
     pub(super) split_with: u32,
     pub(super) split_at: f32,
     pub(super) left: u32,
     pub(super) right: u32,
 }
 
-impl fmt::Display for Branch {
+impl fmt::Display for BranchNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -29,14 +29,14 @@ impl fmt::Display for Branch {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Leaf<P: ProblemType> {
+pub struct LeafNode<P: ProblemType> {
     pub(super) prediction: P::Output,
 }
 
 #[derive(Debug, Clone)]
 pub enum Node<P: ProblemType> {
-    Leaf(Leaf<P>),
-    Branch(Branch),
+    Leaf(LeafNode<P>),
+    Branch(BranchNode),
 }
 
 impl<P: ProblemType> Node<P> {
@@ -48,7 +48,7 @@ impl<P: ProblemType> Node<P> {
         matches!(self, Self::Leaf(_))
     }
 
-    pub fn take_leaf(&self) -> Option<&Leaf<P>> {
+    pub fn take_leaf(&self) -> Option<&LeafNode<P>> {
         match self {
             Node::Leaf(l) => Some(l),
             _ => None,
@@ -253,11 +253,11 @@ where
         self.problem.features()
     }
 
-    fn next_left(&self, branch: &Branch) -> &Node<P> {
+    fn next_left(&self, branch: &BranchNode) -> &Node<P> {
         &self.nodes[branch.left as usize]
     }
 
-    fn next_right(&self, branch: &Branch) -> &Node<P> {
+    fn next_right(&self, branch: &BranchNode) -> &Node<P> {
         &self.nodes[branch.right as usize]
     }
 }
