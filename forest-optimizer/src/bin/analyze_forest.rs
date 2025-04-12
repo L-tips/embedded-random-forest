@@ -28,6 +28,10 @@ struct Cli {
     /// Problem type
     #[arg(short = 'p', long = "problem-type", value_enum)]
     problem_type: ProblemType,
+
+    /// Print forest
+    #[arg(long = "print")]
+    print: bool,
 }
 
 fn main() -> Result<()> {
@@ -35,12 +39,12 @@ fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.problem_type {
-        ProblemType::Classification => analyze_classification(args.input),
-        ProblemType::Regression => analyze_regression(args.input),
+        ProblemType::Classification => analyze_classification(args.input, args.print),
+        ProblemType::Regression => analyze_regression(args.input, args.print),
     }
 }
 
-fn analyze_classification(input: impl AsRef<Path>) -> Result<()> {
+fn analyze_classification(input: impl AsRef<Path>, print: bool) -> Result<()> {
     let serialized = SerializedForest::<SerializedClassificationNode>::read(&input)
         .context("Could not read forest definition file.")?;
     let forest = Forest::from_serialized(serialized)?;
@@ -66,7 +70,9 @@ fn analyze_classification(input: impl AsRef<Path>) -> Result<()> {
         size_of_val(forest.nodes())
     );
 
-    println!("Forest: {:?}", forest);
+    if print {
+        println!("Forest: {:?}", forest)
+    };
 
     let optimized_nodes = forest.optimize_nodes();
     let optimized = OptimizedForest::<Classification>::new(
@@ -103,7 +109,7 @@ fn analyze_classification(input: impl AsRef<Path>) -> Result<()> {
     Ok(())
 }
 
-fn analyze_regression(input: impl AsRef<Path>) -> Result<()> {
+fn analyze_regression(input: impl AsRef<Path>, print: bool) -> Result<()> {
     let serialized = SerializedForest::<SerializedRegressionNode>::read(&input)
         .context("Could not read forest definition file.")?;
     let forest = Forest::from_serialized(serialized)?;
@@ -129,7 +135,9 @@ fn analyze_regression(input: impl AsRef<Path>) -> Result<()> {
         size_of_val(forest.nodes())
     );
 
-    println!("Forest: {:?}", forest);
+    if print {
+        println!("Forest: {:?}", forest);
+    }
 
     let optimized_nodes = forest.optimize_nodes();
     let optimized = OptimizedForest::<Regression>::new(
